@@ -361,7 +361,8 @@ int ff_av1_parse_seq_header(AV1SequenceParameters *seq, const uint8_t *buf, int 
     return AVERROR_INVALIDDATA;
 }
 
-int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
+int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size,
+                       int write_seq_header)
 {
     AVIOContext *meta_pb;
     AV1SequenceParameters seq_params;
@@ -451,7 +452,9 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
     flush_put_bits(&pbc);
 
     avio_write(pb, header, sizeof(header));
-    avio_write(pb, seq, seq_size);
+    if (write_seq_header) {
+        avio_write(pb, seq, seq_size);
+    }
 
     meta_size = avio_get_dyn_buf(meta_pb, &meta);
     if (meta_size)
