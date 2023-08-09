@@ -63,6 +63,9 @@
 #define AVERROR_PROTOCOL_NOT_FOUND FFERRTAG(0xF8,'P','R','O') ///< Protocol not found
 
 #define AVERROR_STREAM_NOT_FOUND   FFERRTAG(0xF8,'S','T','R') ///< Stream not found
+#ifndef AVERROR_EIO
+#define AVERROR_EIO                FFERRTAG( 'E','I','O',' ') ///< error of io issue
+#endif
 /**
  * This is semantically identical to AVERROR_BUG
  * it has been introduced in Libav after our AVERROR_BUG and with a modified value.
