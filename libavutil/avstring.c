@@ -104,7 +104,12 @@ size_t av_strlcatf(char *dst, size_t size, const char *fmt, ...)
     va_list vl;
 
     va_start(vl, fmt);
-    len += vsnprintf(dst + len, size > len ? size - len : 0, fmt, vl);
+    size_t len_limit = size > len ? size - len : 0;
+#if !defined(__LP64__) && defined(__ANDROID__)
+    if(len_limit > INT_MAX)
+        len_limit = INT_MAX;
+#endif
+    len += vsnprintf(dst + len, len_limit, fmt, vl);
     va_end(vl);
 
     return len;
