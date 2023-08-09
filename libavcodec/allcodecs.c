@@ -765,6 +765,7 @@ extern AVCodec ff_libx262_encoder;
 extern AVCodec ff_libx264_encoder;
 extern AVCodec ff_libx264rgb_encoder;
 extern AVCodec ff_libx265_encoder;
+extern AVCodec ff_libks265_decoder;
 extern AVCodec ff_libxavs_encoder;
 extern AVCodec ff_libxavs2_encoder;
 extern AVCodec ff_libxvid_encoder;
