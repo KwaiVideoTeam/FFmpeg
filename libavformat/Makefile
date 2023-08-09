@@ -63,6 +63,10 @@ OBJS-$(CONFIG_SHARED)                    += log2_tab.o golomb_tab.o
 OBJS-$(CONFIG_SRTP)                      += srtp.o
 
 # muxers/demuxers
+#
+OBJS-$(CONFIG_KWAILIVE_DEMUXER)          += kwai.o
+OBJS-$(CONFIG_KPHLS_DEMUXER)             += kwai.o
+OBJS-$(CONFIG_KPWEBRTC_DEMUXER)          += kwai.o
 OBJS-$(CONFIG_A64_MUXER)                 += a64.o rawenc.o
 OBJS-$(CONFIG_AA_DEMUXER)                += aadec.o
 OBJS-$(CONFIG_AAC_DEMUXER)               += aacdec.o apetag.o img2.o rawdec.o
@@ -609,6 +613,20 @@ OBJS-$(CONFIG_LIBOPENMPT_DEMUXER)        += libopenmpt.o
 OBJS-$(CONFIG_VAPOURSYNTH_DEMUXER)       += vapoursynth.o
 
 # protocols I/O
+#kwai private protocols
+
+OBJS-$(CONFIG_KPASYNC_PROTOCOL)             += kwaiproto.o
+OBJS-$(CONFIG_KPHTTPHOOK_PROTOCOL)             += kwaiproto.o
+OBJS-$(CONFIG_KPINJECT_PROTOCOL)             += kwaiproto.o
+OBJS-$(CONFIG_KPLONGURL_PROTOCOL)             += kwaiproto.o
+OBJS-$(CONFIG_KPMEDIADATASOURCE_PROTOCOL)             += kwaiproto.o
+OBJS-$(CONFIG_KPSEGMENT_PROTOCOL)             += kwaiproto.o
+OBJS-$(CONFIG_KPTCPHOOK_PROTOCOL)             += kwaiproto.o
+OBJS-$(CONFIG_KPINDEXCONTENT_PROTOCOL)             += kwaiproto.o
+OBJS-$(CONFIG_KPWEBRTC_PROTOCOL)             += kwaiproto.o
+OBJS-$(CONFIG_KPFFMPEGDATASOURCE_PROTOCOL)             += kwaiproto.o
+OBJS-$(CONFIG_KWAI_PROTOCOL)             += kwaiproto.o
+
 OBJS-$(CONFIG_ASYNC_PROTOCOL)            += async.o
 OBJS-$(CONFIG_APPLEHTTP_PROTOCOL)        += hlsproto.o
 OBJS-$(CONFIG_BLURAY_PROTOCOL)           += bluray.o

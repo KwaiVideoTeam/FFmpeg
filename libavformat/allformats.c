@@ -28,6 +28,14 @@
 #include "version.h"
 
 /* (de)muxers */
+extern AVInputFormat ff_kwailive_demuxer;
+extern AVInputFormat ff_kphls_demuxer;
+extern AVInputFormat ff_kpwebrtc_demuxer;
+extern AVInputFormat ff_kphls_aemon_demuxer;
+extern AVInputFormat ff_kpwebrtc_aemon_demuxer;
+
+
+/* (de)muxers */
 extern AVOutputFormat ff_a64_muxer;
 extern AVInputFormat  ff_aa_demuxer;
 extern AVInputFormat  ff_aac_demuxer;

@@ -23,6 +23,30 @@
 
 #include "url.h"
 
+/* add slot of protocols for kwai */
+extern const URLProtocol ff_kwai_protocol;
+extern const URLProtocol ff_kpasync_protocol;
+extern const URLProtocol ff_kphttphook_protocol;
+extern const URLProtocol ff_kpinject_protocol;
+extern const URLProtocol ff_kplongurl_protocol;
+extern const URLProtocol ff_kpmediadatasource_protocol;
+extern const URLProtocol ff_kpsegment_protocol;
+extern const URLProtocol ff_kptcphook_protocol;
+extern const URLProtocol ff_kpindexcontent_protocol;
+extern const URLProtocol ff_kpwebrtc_protocol;
+extern const URLProtocol ff_kpffmpegdatasource_protocol;
+
+extern const URLProtocol ff_kpasync_aemon_protocol;
+extern const URLProtocol ff_kphttphook_aemon_protocol;
+extern const URLProtocol ff_kpinject_aemon_protocol;
+extern const URLProtocol ff_kplongurl_aemon_protocol;
+extern const URLProtocol ff_kpmediadatasource_aemon_protocol;
+extern const URLProtocol ff_kpsegment_aemon_protocol;
+extern const URLProtocol ff_kptcphook_aemon_protocol;
+extern const URLProtocol ff_kpindexcontent_aemon_protocol;
+extern const URLProtocol ff_kpwebrtc_aemon_protocol;
+extern const URLProtocol ff_kpffmpegdatasource_aemon_protocol;
+
 extern const URLProtocol ff_async_protocol;
 extern const URLProtocol ff_bluray_protocol;
 extern const URLProtocol ff_cache_protocol;
