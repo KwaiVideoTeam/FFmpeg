@@ -9,3 +9,10 @@ fate-flv-add_keyframe_index: tests/data/add_keyframe_index.flv
 fate-flv-add_keyframe_index: CMD = ffmetadata -flags +bitexact -i $(TARGET_PATH)/tests/data/add_keyframe_index.flv
 
 
+FATE_ENHANCED_FLVENC_FFMPEG-$(call REMUX, FLV MOV, FLV_DEMUXER HEVC_PARSER) += fate-enhanced-flv-hevc
+fate-enhanced-flv-hevc: CMD = transcode mov $(TARGET_SAMPLES)/hevc/dv84.mov\
+		flv "-c copy" "-c copy"
+
+FATE_FFMPEG_FFPROBE += $(FATE_FLVENC_FFMPEG_FFPROBE-yes)
+FATE_SAMPLES_FFMPEG += $(FATE_ENHANCED_FLVENC_FFMPEG-yes)
+fate-flvenc: $(FATE_FLVENC_FFMPEG_FFPROBE-yes) $(FATE_ENHANCED_FLVENC_FFMPEG-yes)
