@@ -218,6 +218,12 @@ static int set_string(void *obj, const AVOption *o, const char *val, uint8_t **d
     return *dst ? 0 : AVERROR(ENOMEM);
 }
 
+static int set_pointer(void *obj, const AVOption *o, const char *val, uint8_t **dst)
+{
+    *dst = val ? (void *) strtoll(val, 0, 10) : NULL;
+    return 0;
+}
+
 #define DEFAULT_NUMVAL(opt) ((opt->type == AV_OPT_TYPE_INT64 || \
                               opt->type == AV_OPT_TYPE_UINT64 || \
                               opt->type == AV_OPT_TYPE_CONST || \
@@ -488,6 +494,8 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
         return set_string_bool(obj, o, val, dst);
     case AV_OPT_TYPE_STRING:
         return set_string(obj, o, val, dst);
+    case AV_OPT_TYPE_POINTER:
+        return set_pointer(obj, o, val, dst);
     case AV_OPT_TYPE_BINARY:
         return set_string_binary(obj, o, val, dst);
     case AV_OPT_TYPE_FLAGS:
@@ -832,6 +840,9 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
             *out_val = av_strdup("");
         }
         return *out_val ? 0 : AVERROR(ENOMEM);
+    case AV_OPT_TYPE_POINTER:
+        *out_val = *(uint8_t **)dst;
+        return 0;
     case AV_OPT_TYPE_BINARY:
         if (!*(uint8_t **)dst && (search_flags & AV_OPT_ALLOW_NULL)) {
             *out_val = NULL;
@@ -1192,6 +1203,9 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             case AV_OPT_TYPE_STRING:
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<string>");
                 break;
+            case AV_OPT_TYPE_POINTER:
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<pointer>");
+                break;
             case AV_OPT_TYPE_RATIONAL:
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<rational>");
                 break;
@@ -1330,6 +1344,9 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             case AV_OPT_TYPE_VIDEO_RATE:
                 av_log(av_log_obj, AV_LOG_INFO, "\"%s\"", opt->default_val.str);
                 break;
+            case AV_OPT_TYPE_POINTER:
+                av_log(av_log_obj, AV_LOG_INFO, "%p", opt->default_val.ptr);
+                break;
             case AV_OPT_TYPE_CHANNEL_LAYOUT:
                 av_log(av_log_obj, AV_LOG_INFO, "0x%"PRIx64, opt->default_val.i64);
                 break;
@@ -1405,6 +1422,9 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
                 break;
             case AV_OPT_TYPE_STRING:
                 set_string(s, opt, opt->default_val.str, dst);
+                break;
+            case AV_OPT_TYPE_POINTER:
+                *(void **)dst = opt->default_val.ptr;
                 break;
             case AV_OPT_TYPE_IMAGE_SIZE:
                 set_string_image_size(s, opt, opt->default_val.str, dst);
@@ -1768,7 +1788,8 @@ static int opt_size(enum AVOptionType type)
     case AV_OPT_TYPE_FLOAT:
         return sizeof(float);
     case AV_OPT_TYPE_STRING:
-        return sizeof(uint8_t*);
+    case AV_OPT_TYPE_POINTER:
+        return sizeof(void*);
     case AV_OPT_TYPE_VIDEO_RATE:
     case AV_OPT_TYPE_RATIONAL:
         return sizeof(AVRational);
@@ -1899,6 +1920,7 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
     case AV_OPT_TYPE_DURATION:
     case AV_OPT_TYPE_COLOR:
     case AV_OPT_TYPE_CHANNEL_LAYOUT:
+    case AV_OPT_TYPE_POINTER:
         break;
     case AV_OPT_TYPE_STRING:
         range->component_min = 0;
@@ -1991,6 +2013,8 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o)
         if (!str || !o->default_val.str) //1 NULL
             return 0;
         return !strcmp(str, o->default_val.str);
+    case AV_OPT_TYPE_POINTER:
+        return *(void **)dst == o->default_val.ptr;
     case AV_OPT_TYPE_DOUBLE:
         read_number(o, dst, &d, NULL, NULL);
         return o->default_val.dbl == d;

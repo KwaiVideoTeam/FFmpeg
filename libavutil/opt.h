@@ -240,6 +240,7 @@ enum AVOptionType{
     AV_OPT_TYPE_COLOR,
     AV_OPT_TYPE_CHANNEL_LAYOUT,
     AV_OPT_TYPE_BOOL,
+    AV_OPT_TYPE_POINTER,
 };
 
 /**
@@ -270,6 +271,7 @@ typedef struct AVOption {
         const char *str;
         /* TODO those are unused now */
         AVRational q;
+        void *ptr;
     } default_val;
     double min;                 ///< minimum valid value for the option
     double max;                 ///< maximum valid value for the option
