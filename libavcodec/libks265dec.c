@@ -230,6 +230,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
             ret = KS265DecodeFrame( s->m_decoder, avpkt->data, avpkt->size, pts);
             s->reserved[0] = ret;
             if (ret != 0 ){
+                avctx->decoder_errors++;
                 av_log(avctx, AV_LOG_ERROR, "KS265DecodeFrame decode error (%d) %d\n", ret, avpkt->size);
             }
         }

@@ -2345,6 +2345,7 @@ typedef struct AVCodecContext {
      */
     int export_side_data;
 
+    int decoder_errors;  // add by kwai for count software decoder error
     /**
      * This callback is called at the beginning of each packet to get a data
      * buffer for it.
