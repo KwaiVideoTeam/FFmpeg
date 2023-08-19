@@ -397,6 +397,7 @@ typedef struct AVPacket {
     attribute_deprecated
     int64_t convergence_duration;
 #endif
+    int cur_seq_no;
 } AVPacket;
 
 #if FF_API_INIT_PACKET

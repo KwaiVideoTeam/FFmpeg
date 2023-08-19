@@ -615,6 +615,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     dst->side_data            = NULL;
     dst->side_data_elems      = 0;
+    dst->cur_seq_no           = src->cur_seq_no;
     for (i = 0; i < src->side_data_elems; i++) {
         enum AVPacketSideDataType type = src->side_data[i].type;
         buffer_size_t size = src->side_data[i].size;
