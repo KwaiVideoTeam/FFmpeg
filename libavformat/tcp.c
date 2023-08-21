@@ -41,6 +41,9 @@ typedef struct TCPContext {
     int listen_timeout;
     int recv_buffer_size;
     int send_buffer_size;
+    long long read_bytes;
+    long long write_bytes;
+    char cdn_ip[INET6_ADDRSTRLEN];
     int tcp_nodelay;
 #if !HAVE_WINSOCK2_H
     int tcp_mss;
@@ -53,7 +56,8 @@ typedef struct TCPContext {
 static const AVOption options[] = {
     { "listen",          "Listen for incoming connections",  OFFSET(listen),         AV_OPT_TYPE_INT, { .i64 = 0 },     0,       2,       .flags = D|E },
     { "timeout",     "set timeout (in microseconds) of socket I/O operations", OFFSET(rw_timeout),     AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
-    { "listen_timeout",  "Connection awaiting timeout (in milliseconds)",      OFFSET(listen_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
+    { "listen_timeout",  "Listen awaiting timeout (in milliseconds)",      OFFSET(listen_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
+    { "open_timeout",  "Connection awaiting timeout (in milliseconds)",      OFFSET(open_timeout), AV_OPT_TYPE_INT, { .i64 = 5000000 },         0, INT_MAX, .flags = D|E },
     { "send_buffer_size", "Socket send buffer size (in bytes)",                OFFSET(send_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "recv_buffer_size", "Socket receive buffer size (in bytes)",             OFFSET(recv_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "tcp_nodelay", "Use TCP_NODELAY to disable nagle's algorithm",           OFFSET(tcp_nodelay), AV_OPT_TYPE_BOOL, { .i64 = 0 },             0, 1, .flags = D|E },
@@ -100,7 +104,7 @@ static void customize_fd(void *ctx, int fd)
 }
 
 /* return non zero if error */
-static int tcp_open(URLContext *h, const char *uri, int flags)
+static int tcp_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
 {
     struct addrinfo hints = { 0 }, *ai, *cur_ai;
     int port, fd = -1;
@@ -110,7 +114,12 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     int ret;
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
-    s->open_timeout = 5000000;
+    s->write_bytes = 0;
+    s->read_bytes = 0;
+
+    int64_t dns_start_time;
+    int64_t connect_start_time = av_gettime();
+    h->connect_time = -1;
 
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
         &port, path, sizeof(path), uri);
@@ -137,7 +146,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         }
     }
     if (s->rw_timeout >= 0) {
-        s->open_timeout =
         h->rw_timeout   = s->rw_timeout;
     }
     hints.ai_family = AF_UNSPEC;
@@ -145,6 +153,10 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     snprintf(portstr, sizeof(portstr), "%d", port);
     if (s->listen)
         hints.ai_flags |= AI_PASSIVE;
+
+    dns_start_time = av_gettime();
+    h->analyze_dns_time = -1;
+        
     if (!hostname[0])
         ret = getaddrinfo(NULL, portstr, &hints, &ai);
     else
@@ -156,7 +168,29 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         return AVERROR(EIO);
     }
 
+    h->analyze_dns_time = (av_gettime() - dns_start_time) / 1000;
+
     cur_ai = ai;
+
+    connect_start_time = av_gettime();
+
+    // Update server_ip on each restart
+    if(cur_ai != NULL)
+    {
+        char abuf[INET6_ADDRSTRLEN];
+        const char* addrQy = NULL;
+        if (cur_ai->ai_family == AF_INET6) {
+            struct sockaddr_in6 *sinp = (struct sockaddr_in6 *)cur_ai->ai_addr;
+            addrQy = inet_ntop(AF_INET6, &sinp->sin6_addr, abuf, INET6_ADDRSTRLEN);
+        } else if (cur_ai->ai_family == AF_INET) {
+            struct sockaddr_in *sinp = (struct sockaddr_in *)cur_ai->ai_addr;
+            addrQy = inet_ntop(AF_INET, &sinp->sin_addr, abuf, INET6_ADDRSTRLEN);
+        }
+        if(addrQy != NULL) {
+            strcpy(s->cdn_ip, addrQy);
+            av_dict_set(options, "server_ip", addrQy, 0);
+        }
+    } 
 
 #if HAVE_STRUCT_SOCKADDR_IN6
     // workaround for IOS9 getaddrinfo in IPv6 only network use hardcode IPv4 address can not resolve port number.
@@ -200,6 +234,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             goto fail1;
     }
 
+    h->connect_time  = (av_gettime() - connect_start_time)  / 1000;
     h->is_streamed = 1;
     s->fd = fd;
 
@@ -242,6 +277,7 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
             return ret;
     }
     ret = recv(s->fd, buf, size, 0);
+    s->read_bytes += (ret < 0) ? 0 : ret;
     if (ret == 0)
         return AVERROR_EOF;
     return ret < 0 ? ff_neterrno() : ret;
@@ -258,6 +294,7 @@ static int tcp_write(URLContext *h, const uint8_t *buf, int size)
             return ret;
     }
     ret = send(s->fd, buf, size, MSG_NOSIGNAL);
+    s->write_bytes += (ret < 0) ? 0 : ret;
     return ret < 0 ? ff_neterrno() : ret;
 }
 
@@ -290,6 +327,28 @@ static int tcp_get_file_handle(URLContext *h)
     return s->fd;
 }
 
+long long ff_qytcp_get_read_bytes( URLContext *h) {
+    TCPContext *s = h->priv_data;
+    if ( s ) { 
+        return s->read_bytes; 
+    }
+    return 0;
+}
+long long ff_qytcp_get_write_bytes( URLContext *h) {
+    TCPContext *s = h->priv_data;
+    if ( s ) { 
+        return s->write_bytes;
+    }
+    return 0;
+}
+char* ff_qytcp_get_ip(URLContext *h) {
+    TCPContext *s = h->priv_data;
+    if(s)
+        return s->cdn_ip;
+    
+    return NULL;
+}
+
 static int tcp_get_window_size(URLContext *h)
 {
     TCPContext *s = h->priv_data;
@@ -312,7 +371,7 @@ static int tcp_get_window_size(URLContext *h)
 
 const URLProtocol ff_tcp_protocol = {
     .name                = "tcp",
-    .url_open            = tcp_open,
+    .url_open2           = tcp_open,
     .url_accept          = tcp_accept,
     .url_read            = tcp_read,
     .url_write           = tcp_write,

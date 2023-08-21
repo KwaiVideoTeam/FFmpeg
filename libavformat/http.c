@@ -48,6 +48,10 @@
  * path names). */
 #define BUFFER_SIZE   (MAX_URL_SIZE + HTTP_HEADERS_SIZE)
 #define MAX_REDIRECTS 8
+#include "libavutil/time.h"
+#define MAX_PARA_SIZE 256
+#define MAX_REDIRECT_BUFFER 2048
+#define MAX_X_KS_HEADER_COUNT 10
 #define HTTP_SINGLE   1
 #define HTTP_MUTLI    2
 #define MAX_EXPIRY    19
@@ -315,6 +319,7 @@ redo:
 
     off = s->off;
     location_changed = http_open_cnx_internal(h, options);
+
     if (location_changed < 0) {
         if (!http_should_reconnect(s, location_changed) ||
             reconnect_delay > s->reconnect_delay_max)
@@ -337,6 +342,7 @@ redo:
     if (s->http_code == 401) {
         if ((cur_auth_type == HTTP_AUTH_NONE || s->auth_state.stale) &&
             s->auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
+
             ffurl_closep(&s->hd);
             goto redo;
         } else
@@ -345,6 +351,7 @@ redo:
     if (s->http_code == 407) {
         if ((cur_proxy_auth_type == HTTP_AUTH_NONE || s->proxy_auth_state.stale) &&
             s->proxy_auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
+
             ffurl_closep(&s->hd);
             goto redo;
         } else
@@ -354,6 +361,7 @@ redo:
          s->http_code == 303 || s->http_code == 307 || s->http_code == 308) &&
         location_changed == 1) {
         /* url moved, get next */
+
         ffurl_closep(&s->hd);
         if (redirects++ >= MAX_REDIRECTS)
             return AVERROR(EIO);
@@ -364,6 +372,7 @@ redo:
         location_changed = 0;
         goto redo;
     }
+
     return 0;
 
 fail:
@@ -650,6 +659,7 @@ static int http_open(URLContext *h, const char *uri, int flags,
 bail_out:
     if (ret < 0)
         av_dict_free(&s->chained_options);
+
     return ret;
 }
 
@@ -1050,6 +1060,7 @@ static int process_line(URLContext *h, char *line, int line_count,
                 return ret;
         }
     } else {
+
         while (*p != '\0' && *p != ':')
             p++;
         if (*p != ':')
@@ -1106,7 +1117,7 @@ static int process_line(URLContext *h, char *line, int line_count,
         } else if (!av_strcasecmp(tag, "Content-Encoding")) {
             if ((ret = parse_content_encoding(h, p)) < 0)
                 return ret;
-        }
+	    }
     }
     return 1;
 }
@@ -1690,6 +1701,7 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
     size = http_read_stream(h, buf, size);
     if (size > 0)
         s->icy_data_read += size;
+
     return size;
 }
 
@@ -1766,6 +1778,7 @@ static int http_close(URLContext *h)
     if (s->hd)
         ffurl_closep(&s->hd);
     av_dict_free(&s->chained_options);
+
     return ret;
 }
 
@@ -1836,6 +1849,12 @@ static int http_get_file_handle(URLContext *h)
 {
     HTTPContext *s = h->priv_data;
     return ffurl_get_file_handle(s->hd);
+}
+
+URLContext* qyhttp_get_tcpstream(URLContext* httpCtx)
+{
+    HTTPContext *http = (HTTPContext*) httpCtx->priv_data;
+    return http->hd;
 }
 
 static int http_get_short_seek(URLContext *h)

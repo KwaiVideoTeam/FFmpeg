@@ -49,6 +49,8 @@ typedef struct URLContext {
     const char *protocol_whitelist;
     const char *protocol_blacklist;
     int min_packet_size;        /**< if non zero, the stream is packetized with this min packet size */
+    int64_t connect_time;
+    int64_t analyze_dns_time;
 } URLContext;
 
 typedef struct URLProtocol {
@@ -391,5 +393,15 @@ typedef struct URLComponents {
  *          malformed.
  */
 int ff_url_decompose(URLComponents *uc, const char *url, const char *end);
+
+
+URLContext*   qyrtmp_get_tcpstream(URLContext* rtmpCtx );
+URLContext*   qyhttp_get_tcpstream(URLContext* httpCtx );
+
+long long ff_qytcp_get_read_bytes( URLContext *h) ;
+long long ff_qytcp_get_write_bytes( URLContext *h);
+char* ff_qytcp_get_ip( URLContext *h );
+char* qyrtmp_get_domain( URLContext *h );
+char* qyrtmp_get_stream_id( URLContext *h );
 
 #endif /* AVFORMAT_URL_H */
