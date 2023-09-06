@@ -678,7 +678,6 @@ static int set_context_with_sequence(AVCodecContext *avctx,
         if (ret < 0)
             return ret;
     }
-    avctx->sample_aspect_ratio = (AVRational) { 1, 1 };
 
     if (seq->timing_info.num_units_in_display_tick &&
         seq->timing_info.time_scale) {
