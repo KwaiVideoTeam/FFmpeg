@@ -120,6 +120,40 @@ else
 	$(STRIP) $@
 endif
 
+libffmpeg: $(OBJS-ffmpeg) $(FF_DEP_LIBS) $(FF_STATIC_DEP_LIBS) $(SLIBOBJS)
+       echo "OBJS-ffmpeg : $(OBJS-ffmpeg)"
+       echo "FF_DEP_LIBS : $(FF_DEP_LIBS)"
+       echo "FF_STATIC_DEP_LIBS : $(FF_STATIC_DEP_LIBS)"
+       echo "SLIBOBJS : $(SLIBOBJS)"
+       echo "FFEXTRALIBS : $(FFEXTRALIBS)"
+       echo "FF_EXTRALIBS : $(FF_EXTRALIBS)"
+       echo "SLIB_EXTRA_CMD : $(SLIB_EXTRA_CMD)"
+       $(SLIB_CREATE_DEF_CMD)
+       $(Q)mkdir -p "$(LIBDIR)"
+       $(LD) -Wl,-soname,libffmpeg.so -shared -Wl,-Bsymbolic $(LDFLAGS) -o libffmpeg_g.so \
+                       -Wl,--whole-archive $(filter-out $(FFEXTRALIBS),$(FF_EXTRALIBS)) \
+                       -Wl,--no-whole-archive $(FFEXTRALIBS) $(SLIB_EXTRA_CMD)
+       $(CP) libffmpeg_g.so "$(LIBDIR)/libffmpeg.so"
+       $(STRIP) "$(LIBDIR)/libffmpeg.so"
+
+libffmpeg_full: $(OBJS-ffmpeg) $(FF_DEP_LIBS) $(FF_STATIC_DEP_LIBS) $(SLIBOBJS)
+       echo "OBJS-ffmpeg : $(OBJS-ffmpeg)"
+       echo "FF_DEP_LIBS : $(FF_DEP_LIBS)"
+       echo "FF_STATIC_DEP_LIBS : $(FF_STATIC_DEP_LIBS)"
+       echo "SLIBOBJS : $(SLIBOBJS)"
+       echo "FFEXTRALIBS : $(FFEXTRALIBS)"
+       echo "FF_EXTRALIBS : $(FF_EXTRALIBS)"
+       echo "SLIB_EXTRA_CMD : $(SLIB_EXTRA_CMD)"
+       $(SLIB_CREATE_DEF_CMD)
+       $(Q)mkdir -p "$(LIBDIR)"
+       $(LD) -Wl,-soname,libffmpeg_full.so -shared -Wl,-Bsymbolic $(LDFLAGS) -o libffmpeg_full_g.so \
+                       -Wl,--whole-archive $(filter-out $(FFEXTRALIBS),$(FF_EXTRALIBS)) \
+                       -Wl,--no-whole-archive $(FFEXTRALIBS) $(SLIB_EXTRA_CMD)
+       $(CP) libffmpeg_full_g.so "$(LIBDIR)/libffmpeg_full.so"
+       $(STRIP) "$(LIBDIR)/libffmpeg_full.so"
+
+
+
 %$(PROGSSUF)_g$(EXESUF): $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
