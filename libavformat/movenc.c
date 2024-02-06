@@ -1298,7 +1298,7 @@ static int mov_write_av1c_tag(AVIOContext *pb, MOVTrack *track)
 
     avio_wb32(pb, 0);
     ffio_wfourcc(pb, "av1C");
-    ff_isom_write_av1c(pb, track->vos_data, track->vos_len);
+    ff_isom_write_av1c(pb, track->vos_data, track->vos_len, 1);
     return update_size(pb, pos);
 }
 
@@ -1318,9 +1318,7 @@ static int mov_write_vpcc_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
 
     avio_wb32(pb, 0);
     ffio_wfourcc(pb, "vpcC");
-    avio_w8(pb, 1); /* version */
-    avio_wb24(pb, 0); /* flags */
-    ff_isom_write_vpcc(s, pb, track->par);
+    ff_isom_write_vpcc(s, pb, track->vos_data, track->vos_len, track->par);
     return update_size(pb, pos);
 }
 
@@ -5650,7 +5648,9 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
          par->codec_id == AV_CODEC_ID_H264 ||
          par->codec_id == AV_CODEC_ID_HEVC ||
          par->codec_id == AV_CODEC_ID_TRUEHD ||
-         par->codec_id == AV_CODEC_ID_AC3) && !trk->vos_len &&
+         par->codec_id == AV_CODEC_ID_AC3 ||
+         par->codec_id == AV_CODEC_ID_VP9 ||
+         par->codec_id == AV_CODEC_ID_TRUEHD) && !trk->vos_len &&
          !TAG_IS_AVCI(trk->tag)) {
         /* copy frame to create needed atoms */
         trk->vos_len  = size;
