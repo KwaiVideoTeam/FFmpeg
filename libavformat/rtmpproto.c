@@ -128,7 +128,6 @@ typedef struct RTMPContext {
     char          auth_params[500];
     int           do_reconnect;
     int           auth_tried;
-    char*         hostname;
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -2142,12 +2141,14 @@ static int handle_invoke_status(URLContext *s, RTMPPacket *pkt)
             av_log(s, AV_LOG_ERROR, "Server error: %s\n", tmpstr);
         return -1;
     }
+
     t = ff_amf_get_field_value(ptr, data_end, "code", tmpstr, sizeof(tmpstr));
     if (!t && !strcmp(tmpstr, "NetStream.Play.Start")) rt->state = STATE_PLAYING;
     if (!t && !strcmp(tmpstr, "NetStream.Play.Stop")) rt->state = STATE_STOPPED;
     if (!t && !strcmp(tmpstr, "NetStream.Play.UnpublishNotify")) rt->state = STATE_STOPPED;
     if (!t && !strcmp(tmpstr, "NetStream.Publish.Start")) rt->state = STATE_PUBLISHING;
     if (!t && !strcmp(tmpstr, "NetStream.Seek.Notify")) rt->state = STATE_PLAYING;
+
     return 0;
 }
 
@@ -2492,6 +2493,7 @@ static int rtmp_close(URLContext *h)
 {
     RTMPContext *rt = h->priv_data;
     int ret = 0, i, j;
+
     if (!rt->is_input) {
         rt->flv_data = NULL;
         if (rt->out_pkt.size)
@@ -2509,7 +2511,6 @@ static int rtmp_close(URLContext *h)
 
     free_tracked_methods(rt);
     av_freep(&rt->flv_data);
-    av_freep(&rt->hostname);
     ffurl_closep(&rt->stream);
     return ret;
 }
@@ -2595,6 +2596,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags, AVDictionary **o
     uint8_t buf[2048];
     int port;
     int ret;
+
     if (rt->listen_timeout > 0)
         rt->listen = 1;
 
@@ -2779,16 +2781,6 @@ reconnect:
                     port, "/%s", rt->app);
     }
 
-    if (!rt->hostname) {
-        rt->hostname = av_malloc(TCURL_MAX_LENGTH);
-        memset(rt->hostname, 0, TCURL_MAX_LENGTH);
-        if (!rt->hostname) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        memcpy(rt->hostname, hostname, strlen(hostname));
-    }
-
     if (!rt->flashver) {
         rt->flashver = av_malloc(FLASHVER_MAX_LENGTH);
         if (!rt->flashver) {
@@ -2814,8 +2806,8 @@ reconnect:
     rt->max_sent_unacked = 2500000;
     rt->duration = 0;
 
-    av_log(s, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s, hostname = %s",
-           proto, path, rt->app, rt->playpath, rt->hostname);
+    av_log(s, AV_LOG_DEBUG, "Proto = %s, path = %s, app = %s, fname = %s\n",
+           proto, path, rt->app, rt->playpath);
     if (!rt->listen) {
         if ((ret = gen_connect(s, rt)) < 0)
             goto fail;
@@ -2967,6 +2959,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
     const uint8_t *buf_temp = buf;
     uint8_t c;
     int ret;
+
     do {
         if (rt->skip_bytes) {
             int skip = FFMIN(rt->skip_bytes, size_temp);
@@ -3096,21 +3089,6 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
     }
 
     return size;
-}
-
-URLContext*   qyrtmp_get_tcpstream(URLContext* rtmpCtx ) {
-    RTMPContext * s = (RTMPContext*)rtmpCtx->priv_data;
-    return s->stream;
-}
-
-char* qyrtmp_get_domain(URLContext* rtmpCtx ) {
-    RTMPContext * s = (RTMPContext*)rtmpCtx->priv_data;
-    return s->hostname;
-}
-
-char* qyrtmp_get_stream_id(URLContext* rtmpCtx ) {
-    RTMPContext * s = (RTMPContext*)rtmpCtx->priv_data;
-    return s->playpath;
 }
 
 #define OFFSET(x) offsetof(RTMPContext, x)
