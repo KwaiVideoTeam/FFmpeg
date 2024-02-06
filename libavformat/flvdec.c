@@ -385,16 +385,13 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
     case FLV_CODECID_H264:
         par->codec_id = AV_CODEC_ID_H264;
         vstream->need_parsing = AVSTREAM_PARSE_HEADERS;
-        ret = 3;     // not 4, reading packet type will consume one byte
         break;
     case FLV_CODECID_HEVC:
         par->codec_id = AV_CODEC_ID_HEVC;
         vstream->need_parsing = AVSTREAM_PARSE_NONE;
-        ret = 3;     // not 4, reading packet type will consume one byte
         break;
     case FLV_CODECID_MPEG4:
         par->codec_id = AV_CODEC_ID_MPEG4;
-        ret = 3;
         break;
     default:
         avpriv_request_sample(s, "Video codec (%x)", flv_codecid);
@@ -1316,6 +1313,7 @@ retry_duration:
                        "invalid timestamps %"PRId64" %"PRId64"\n", dts, pts);
                 dts = pts = AV_NOPTS_VALUE;
             }
+            size -= 3;
         }
         if (type == 0 && (!st->codecpar->extradata || st->codecpar->codec_id == AV_CODEC_ID_AAC ||
             st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_HEVC ||
